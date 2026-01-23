@@ -11,13 +11,11 @@ This manager was built because CurseForge provides no native support for Hytale 
 ### 1. Obtaining a CurseForge API Key
 CurseForge requires an API Key to fetch mod data.
 1.  Go to the [CurseForge for Studios](https://console.curseforge.com/#/) portal.
-2.  Log in with your CurseForge/Overwolf account.
-3.  Click on **"Create New App"**.
-4.  Give your app a name (e.g., `MyHytaleManager`).
-5.  Once created, copy the **API Key** from the dashboard.
+2.  Log in with your CurseForge account.
+3.  Set the organization name.
+4.  Once logged in, click on the **API Keys** menu from the sidebar.
+5.  Copy the Api Key
 6.  In the Hytale Mod Manager, click **🔑 Set API Key** in the sidebar and paste your key.
-
-
 
 ### 2. Finding your Hytale Folder Path
 The manager needs to know where Hytale is installed to sort your files correctly.
