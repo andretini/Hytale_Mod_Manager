@@ -439,15 +439,6 @@ def _do_update(skip_confirm: bool):
             out.error(f"Failed to update {upd['name']}: {e}")
 
 
-def _get_input(prompt: str) -> str:
-    """Get input from user, works with getpass for sensitive data."""
-    import getpass
-    try:
-        return getpass.getpass(prompt)
-    except Exception:
-        return input(prompt)
-
-
 def _do_config(api_key: str, game_path: str, show: bool):
     """Config implementation."""
     cfg = Config()
@@ -490,13 +481,13 @@ def _do_config(api_key: str, game_path: str, show: bool):
 def _do_config_interactive_key():
     """Set API key interactively to avoid shell escaping issues."""
     cfg = Config()
-    out.print("Enter your CurseForge API key (input is hidden):")
-    api_key = _get_input("API Key: ")
+    out.print("Paste your CurseForge API key below:")
+    api_key = input("API Key: ")
     if api_key and len(api_key) > 10:
         cfg.api_key = api_key.strip()
         out.success("API key saved")
     else:
-        out.error("Invalid API key")
+        out.error("Invalid API key (too short)")
 
 
 if __name__ == '__main__':
