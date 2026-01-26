@@ -97,7 +97,16 @@ CurseForge requires an API Key to fetch mod data.
 4. Once logged in, click on the **API Keys** menu from the sidebar.
 5. Copy the API Key.
 
-**CLI:** Run `hytale-cf config --api-key YOUR_KEY`
+**CLI (recommended - interactive):**
+```bash
+hytale-cf config --api-key-prompt
+```
+
+**CLI (alternative - use single quotes to avoid shell issues):**
+```bash
+hytale-cf config --api-key '$2a$10$YOUR_KEY_HERE'
+```
+
 **GUI:** Click "Set API Key" in the sidebar and paste your key.
 
 ### 2. Finding your Hytale Folder Path

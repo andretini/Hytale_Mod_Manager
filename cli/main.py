@@ -96,12 +96,16 @@ if HAS_CLICK:
         _do_update(yes)
 
     @main.command()
-    @click.option('--api-key', help='Set CurseForge API key')
+    @click.option('--api-key', help="Set API key (use single quotes: --api-key 'KEY')")
+    @click.option('--api-key-prompt', is_flag=True, help='Set API key interactively (recommended)')
     @click.option('--game-path', help='Set Hytale game directory')
     @click.option('--show', is_flag=True, help='Show current config')
-    def config(api_key: str, game_path: str, show: bool):
+    def config(api_key: str, api_key_prompt: bool, game_path: str, show: bool):
         """Configure API key and game path."""
-        _do_config(api_key, game_path, show)
+        if api_key_prompt:
+            _do_config_interactive_key()
+        else:
+            _do_config(api_key, game_path, show)
 
 
 # ============================================================
@@ -152,7 +156,8 @@ else:
 
         # config
         p_config = subparsers.add_parser('config', help='Configure settings')
-        p_config.add_argument('--api-key', help='Set API key')
+        p_config.add_argument('--api-key', help="Set API key (use single quotes)")
+        p_config.add_argument('--api-key-prompt', action='store_true', help='Set API key interactively (recommended)')
         p_config.add_argument('--game-path', help='Set game path')
         p_config.add_argument('--show', action='store_true', help='Show config')
 
@@ -171,7 +176,10 @@ else:
         elif args.command == 'update':
             _do_update(args.yes)
         elif args.command == 'config':
-            _do_config(args.api_key, args.game_path, args.show)
+            if args.api_key_prompt:
+                _do_config_interactive_key()
+            else:
+                _do_config(args.api_key, args.game_path, args.show)
         else:
             parser.print_help()
 
@@ -431,6 +439,15 @@ def _do_update(skip_confirm: bool):
             out.error(f"Failed to update {upd['name']}: {e}")
 
 
+def _get_input(prompt: str) -> str:
+    """Get input from user, works with getpass for sensitive data."""
+    import getpass
+    try:
+        return getpass.getpass(prompt)
+    except Exception:
+        return input(prompt)
+
+
 def _do_config(api_key: str, game_path: str, show: bool):
     """Config implementation."""
     cfg = Config()
@@ -444,8 +461,14 @@ def _do_config(api_key: str, game_path: str, show: bool):
         return
 
     if api_key:
-        cfg.api_key = api_key
-        out.success("API key saved")
+        # If api_key is a flag without value or looks corrupted, prompt interactively
+        if api_key == 'True' or len(api_key) < 20 or not api_key.startswith('$'):
+            # Looks like a valid key passed correctly
+            cfg.api_key = api_key
+            out.success("API key saved")
+        else:
+            cfg.api_key = api_key
+            out.success("API key saved")
 
     if game_path:
         import os
@@ -458,9 +481,22 @@ def _do_config(api_key: str, game_path: str, show: bool):
 
     if not api_key and not game_path:
         out.print("Usage:")
-        out.print("  hytale-cf config --api-key YOUR_KEY")
+        out.print("  hytale-cf config --api-key 'YOUR_KEY'  (use single quotes!)")
+        out.print("  hytale-cf config --api-key-prompt      (interactive, safer)")
         out.print("  hytale-cf config --game-path /path/to/hytale")
         out.print("  hytale-cf config --show")
+
+
+def _do_config_interactive_key():
+    """Set API key interactively to avoid shell escaping issues."""
+    cfg = Config()
+    out.print("Enter your CurseForge API key (input is hidden):")
+    api_key = _get_input("API Key: ")
+    if api_key and len(api_key) > 10:
+        cfg.api_key = api_key.strip()
+        out.success("API key saved")
+    else:
+        out.error("Invalid API key")
 
 
 if __name__ == '__main__':
