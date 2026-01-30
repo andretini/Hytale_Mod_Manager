@@ -1,0 +1,86 @@
+name: Build Releases
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Release
+        run: cargo build --release
+
+      # ---------------- LINUX ----------------
+      - name: Install Linux deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y libgtk-3-dev libwebkit2gtk-4.1-dev \
+              libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Build AppImage
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo install cargo-appimage
+          cargo appimage
+
+      - name: Upload AppImage
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: target/appimage/*.AppImage
+
+      # ---------- Flatpak (basic template) ----------
+      - name: Install Flatpak tools
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt install -y flatpak flatpak-builder
+
+      - name: Build Flatpak
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          flatpak-builder build-dir flatpak/com.example.HytaleManager.json --force-clean
+
+      # ---------------- WINDOWS ----------------
+      - name: Upload Windows exe
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: target/release/*.exe
+
+      # ---------------- MACOS ----------------
+      - name: Create macOS App Bundle
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p HytaleModManager.app/Contents/MacOS
+          cp target/release/hytale-mod-manager HytaleModManager.app/Contents/MacOS/
+
+      - name: Create DMG
+        if: matrix.os == 'macos-latest'
+        run: |
+          hdiutil create -volname HytaleModManager -srcfolder HytaleModManager.app -ov -format UDZO HytaleModManager.dmg
+
+      - name: Upload DMG
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: HytaleModManager.dmg
