@@ -6,6 +6,41 @@ This manager was built because CurseForge provides no native support for Hytale 
 
 ---
 
+## Installation Guide
+
+### Linux
+I provided two formats for Linux:
+
+* **AppImage:**
+    1.  Download the file.
+    2.  Right-click it → **Properties** → **Permissions**.
+    3.  Check **"Allow executing file as program"**, then double-click to run.
+
+* **Flatpak:**
+    If you prefer Flatpak, you may need to add the Flathub repository first to ensure all dependencies (runtimes) are available:
+    ```bash
+      # 1. Add Flathub repo
+      flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+  
+      # 2. Install the app
+      flatpak install HytaleModManager.flatpak
+    ```
+
+### Windows
+1.  Download the **Windows EXE**.
+2.  **Note:** Because this app is not currently signed with a Microsoft certificate, you might see a "Windows protected your PC" popup.
+    * Click **More Info** → **Run Anyway** to proceed.
+
+### macOS
+1.  Download the **DMG** file and open it.
+2.  Drag the app into your **Applications** folder in Finder.
+3.  **Note:** Because I do not use a paid Apple Developer account, macOS will block the app initially. To fix this:
+    * Try to open the app once (it will say it cannot be opened).
+    * Go to **System Settings** → **Privacy & Security**.
+    * Scroll down to the Security section and click **Open Anyway** next to the Hytale Mod Manager notification.
+
+---
+
 ## 🚀 Setup Guide
 
 ### 1. Obtaining a CurseForge API Key
@@ -106,5 +141,6 @@ Make sure you have:
 ### 1. Run Application
   ```bash
     cargo run --release
+
 
 
