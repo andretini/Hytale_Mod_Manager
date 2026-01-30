@@ -72,11 +72,15 @@ jobs:
       # ----- Flatpak -----
       - name: Add Flathub repo
         if: matrix.os == 'ubuntu-latest'
-        run: flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        run: sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install Runtime and SDK
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo flatpak install -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
 
       - name: Build Flatpak
         if: matrix.os == 'ubuntu-latest'
-        run: flatpak-builder build-dir flatpak/com.hytale.modmanager.json --force-clean
+        run: flatpak-builder build-dir flatpak/com.hytale.modmanager.json --force-clean --sandbox-build-args=--share=network
 
       - name: Export Flatpak bundle
         if: matrix.os == 'ubuntu-latest'
