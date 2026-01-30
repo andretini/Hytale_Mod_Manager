@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=Hytale Mod Manager
+Comment=Manage your Hytale mods
+Exec=HytaleModManager
+Icon=com.hytale.modmanager
+Terminal=false
+Type=Application
+Categories=Utility;Game;
+Keywords=hytale;mods;manager;
+StartupNotify=true

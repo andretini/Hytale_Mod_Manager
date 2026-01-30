@@ -42,7 +42,9 @@
       "build-commands": [
         "curl https://sh.rustup.rs -sSf | sh -s -- -y",
         ". $CARGO_HOME/env && rustup default stable && cargo build --release",
-        "install -Dm755 target/release/HytaleModManager /app/bin/HytaleModManager"
+        "install -Dm755 target/release/HytaleModManager /app/bin/HytaleModManager",
+        "install -Dm644 com.hytale.modmanager.desktop /app/share/applications/com.hytale.modmanager.desktop",
+        "install -Dm644 icon.png /app/share/icons/hicolor/512x512/apps/com.hytale.modmanager.png"
       ],
       "sources": [
         {
