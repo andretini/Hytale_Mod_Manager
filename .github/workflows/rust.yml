@@ -79,7 +79,8 @@ jobs:
 
       - name: Install Runtime and SDK
         if: matrix.os == 'ubuntu-latest'
-        run: sudo flatpak install -y flathub org.gnome.Platform//46 org.gnome.Sdk//46
+        # UPDATED: Changed 46 -> 49 to match your new JSON file
+        run: sudo flatpak install -y flathub org.gnome.Platform//49 org.gnome.Sdk//49
 
       - name: Build Flatpak
         if: matrix.os == 'ubuntu-latest'
@@ -113,6 +114,8 @@ jobs:
           mkdir -p $APP_NAME.app/Contents/MacOS
           mkdir -p $APP_NAME.app/Contents/Resources
           cp target/release/$APP_NAME $APP_NAME.app/Contents/MacOS/
+          cp icon.icns $APP_NAME.app/Contents/Resources/
+          
           chmod +x $APP_NAME.app/Contents/MacOS/$APP_NAME
 
       - name: Add Info.plist
@@ -131,9 +134,11 @@ jobs:
               <key>CFBundleIdentifier</key>
               <string>com.hytale.modmanager</string>
               <key>CFBundleVersion</key>
-              <string>0.1.0</string>
+              <string>0.1.2</string>
               <key>CFBundlePackageType</key>
               <string>APPL</string>
+              <key>CFBundleIconFile</key>
+              <string>icon.icns</string>
               <key>LSMinimumSystemVersion</key>
               <string>10.13</string>
           </dict>
@@ -169,7 +174,7 @@ jobs:
           merge-multiple: true
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: release-artifacts/*
           draft: false

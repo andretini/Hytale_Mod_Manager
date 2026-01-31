@@ -103,7 +103,12 @@ impl UiMod {
             .take(3)
             .collect();
 
-        let version = if let Some(latest) = api_mod.latest_files.first() {
+        let version = if let Some(latest) = api_mod
+            .latest_files
+            .iter()
+            .find(|v| v.release_type == 1)
+            .or(api_mod.latest_files.first())
+        {
             UiModVersion::from_curseforge_mod_file(latest)
         } else {
             UiModVersion_dummy()
@@ -120,7 +125,7 @@ impl UiMod {
             banner,
             gallery_urls,
             website_url: api_mod.links.website_url.clone(),
-            version,
+            version
         }
     }
 
@@ -174,7 +179,6 @@ pub async fn search_mods_unified(
     query: String,
     offset: u32,
 ) -> Result<(Vec<UiMod>, u32), String> {
-
     match settings.api_provider {
         ApiProvider::CurseForge => {
             match curse_forge_api::search_mods(query, sort, offset).await {
@@ -225,7 +229,6 @@ pub async fn get_mod_versions_unified(
     settings: &AppSettings,
     mod_id: &str,
 ) -> Result<Vec<UiModVersion>, String> {
-
     match settings.api_provider {
         ApiProvider::CurseForge => {
             let cf_id = mod_id.parse::<u32>()
@@ -241,7 +244,7 @@ pub async fn get_mod_versions_unified(
                 Err(e) => {
                     println!("CurseForge Versions fetch FAILED: {}", e);
                     Err(e.to_string())
-                },
+                }
             }
         }
         ApiProvider::Modtale => {
@@ -263,20 +266,18 @@ pub async fn get_mod_versions_unified(
 
 pub async fn download_version_unified(
     settings: &AppSettings,
-    version: &UiModVersion
+    version: &UiModVersion,
 ) -> Result<(String, Vec<u8>), String> {
-
     let url = version.download_url.as_ref()
         .ok_or("No download URL available")?;
 
     match settings.api_provider {
         ApiProvider::CurseForge => curse_forge_api::download_url(url).await.map(|bytes| (version.file_name.clone(), bytes)),
         ApiProvider::Modtale => {
-
             match mod_tale_api::download_url(url).await {
                 Ok(bytes) => {
                     Ok((version.file_name.clone(), bytes))
-                },
+                }
                 Err(e) => {
                     println!("ModTale Download FAILED: {}", e);
                     Err(e)
@@ -288,7 +289,7 @@ pub async fn download_version_unified(
 
 pub async fn get_mod_details_unified(
     provider: &ApiProvider,
-    mod_id: &str
+    mod_id: &str,
 ) -> Option<UiMod> {
     match provider {
         ApiProvider::CurseForge => {
@@ -309,7 +310,7 @@ pub async fn get_mod_details_unified(
             match mod_tale_api::get_mod(mod_id).await {
                 Ok(m) => {
                     Some(UiMod::from_modtale_api(&m))
-                },
+                }
                 Err(e) => {
                     println!("ModTale fetch FAILED for {}: {}", mod_id, e);
                     None
