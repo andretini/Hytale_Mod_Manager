@@ -134,7 +134,7 @@ jobs:
               <key>CFBundleIdentifier</key>
               <string>com.hytale.modmanager</string>
               <key>CFBundleVersion</key>
-              <string>0.1.2</string>
+              <string>0.1.3</string>
               <key>CFBundlePackageType</key>
               <string>APPL</string>
               <key>CFBundleIconFile</key>
