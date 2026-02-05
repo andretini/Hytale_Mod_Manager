@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use dioxus::events::MouseData;
-use crate::api::ui_mod::download_version_unified;
+use crate::api::ui_mod::{download_version_unified, search_exact_mod_unified};
 use crate::api::local_mods::{InstallStatus, ModInstallInfo, check_install_status, install_mod, remove_mod};
 use crate::api::settings::{AppSettings, ApiProvider};
 use crate::api::ui_mod::UiMod;
@@ -135,18 +135,42 @@ pub fn ModCard(mod_data: ReadOnlySignal<UiMod>, onclick: EventHandler<UiMod>) ->
                         }
                     }
 
+                    let mut final_version_data = version_data.clone();
+                    if final_version_data.download_url.is_none() {
+                        if mod_id == "0" {
+                            error_msg_clone.set(Some("Cannot update local-only mod".to_string()));
+                            mod_store.write().set_processing(&mod_id, false);
+                            return;
+                        }
+
+                        let exact_find = search_exact_mod_unified(
+                            &provider,
+                            mod_name.to_string()
+                        ).await;
+
+                        match exact_find {
+                            Ok(mod_found) => {
+                                final_version_data.download_url = mod_found.version.download_url;
+                            },
+                            Err(e) => {
+                                error_msg_clone.set(Some("Failed to resolve download URL".to_string()));
+                                mod_store.write().set_processing(&mod_id, false);
+                                return;
+                            }
+                        }
+                    }
+
                     let download_res = {
                         let settings = settings_signal.read();
-                        download_version_unified(&settings, &version_data).await
+                        download_version_unified(&settings, &final_version_data).await
                     };
 
                     match download_res {
                         Ok((_, bytes)) => {
                             let mut settings = settings_signal.write();
-
                             match install_mod(
                                 &folder,
-                                &file_name,
+                                &final_version_data.file_name,
                                 &bytes,
                                 mod_id.clone(),
                                 mod_name.clone(),

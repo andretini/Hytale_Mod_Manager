@@ -218,6 +218,16 @@ pub async fn search_mods(query: String, search_sort: u32, offset: u32) -> Result
     Ok((json.data, json.pagination))
 }
 
+pub async fn search_exact_mod(query: String) -> Option<CurseForgeMod> {
+    if let Ok((mods, _)) = search_mods(query.clone(), 0, 0).await {
+        return mods.into_iter().find(|m| {
+            m.name.to_lowercase() == query.to_lowercase() ||
+            m.slug.to_lowercase() == query.to_lowercase()
+        });
+    }
+    None
+}
+
 pub async fn download_image(url: String) -> Result<Vec<u8>, String> {
     let resp = client()
         .get(&url)

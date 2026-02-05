@@ -225,6 +225,26 @@ pub async fn search_mods_unified(
     }
 }
 
+pub async fn search_exact_mod_unified(
+    provider: &ApiProvider,
+    query: String,
+) -> Result<UiMod, String> {
+    match provider {
+        ApiProvider::CurseForge => {
+            if let Some(cf_mod) = curse_forge_api::search_exact_mod(query).await {
+                return Ok(UiMod::from_curseforge_api(&cf_mod));
+            }
+        },
+        ApiProvider::Modtale => {
+            if let Some(mt_mod) = mod_tale_api::search_exact_mod(query).await {
+                return Ok(UiMod::from_modtale_api(&mt_mod));
+            }
+        }
+    }
+
+    Err("Mod Not Found".to_string())
+}
+
 pub async fn get_mod_versions_unified(
     settings: &AppSettings,
     mod_id: &str,

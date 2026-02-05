@@ -2,6 +2,7 @@ use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, OnceLock, RwLock};
 use reqwest::Client;
+use crate::api::curse_forge_api::CurseForgeMod;
 
 const MODTALE_API: &str = "https://api.modtale.net/api/v1";
 const MODTALE_CDN: &str = "https://cdn.modtale.net";
@@ -145,6 +146,17 @@ pub async fn search_mods(query: String, sort: &str, offset: u32) -> Result<(Vec<
 
     Ok((json.content, Some(meta)))
 }
+
+pub async fn search_exact_mod(query: String) -> Option<ModTaleMod> {
+    if let Ok((mods, _)) = search_mods(query.clone(), "desc", 0).await {
+        return mods.into_iter().find(|m| {
+            m.name.to_lowercase() == query.to_lowercase() ||
+            m.slug.to_owned().unwrap_or_default().to_lowercase() == query.to_lowercase()
+        });
+    }
+    None
+}
+
 
 pub async fn get_mod(mod_id: &str) -> Result<ModTaleMod, String> {
     let url = format!("{}/projects/{}", MODTALE_API, mod_id);

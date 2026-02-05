@@ -1,4 +1,4 @@
-use crate::api::ui_mod::{download_version_unified, get_mod_versions_unified};
+use crate::api::ui_mod::{download_version_unified, get_mod_versions_unified, search_exact_mod_unified};
 use crate::api::local_mods::{check_install_status, install_mod, remove_mod, InstallStatus};
 use crate::api::settings::AppSettings;
 use crate::api::ui_mod::{UiMod, UiModVersion};
@@ -119,38 +119,66 @@ pub fn ModInfoDialog(mod_data: UiMod, on_close: EventHandler<()>) -> Element {
                     if current_action == ButtonAction::Update {
                         if let Some(old_file) = local_file_to_remove {
                             let mut settings = settings_signal.write();
-                            let _ = remove_mod(&folder, &old_file, &mut settings);
+                            match remove_mod(&folder, &old_file, &mut settings) {
+                                Ok(_) => {},
+                                Err(_) => error_msg_clone.set(Some("FAILED to remove old file".to_string())),
+                            }
                         }
                     }
 
-                    if let Some(url) = download_url_str {
-                        let download_res = {
-                            let settings = settings_signal.read();
-                            download_version_unified(&settings, &version_data).await
-                        };
+                    let mut final_version_data = version_data.clone();
+                    if final_version_data.download_url.is_none() {
+                        if mod_id == "0" {
+                            error_msg_clone.set(Some("Cannot update local-only mod".to_string()));
+                            mod_store.write().set_processing(&mod_id, false);
+                            return;
+                        }
 
-                        match download_res {
-                            Ok((_, bytes)) => {
-                                let mut settings = settings_signal.write();
-                                match install_mod(
-                                    &folder,
-                                    &file_name,
-                                    &bytes,
-                                    mod_id.clone(),
-                                    mod_name,
-                                    file_id,
-                                    version_name,
-                                    provider,
-                                    &mut settings,
-                                ) {
-                                    Ok(_) => {}
-                                    Err(e) => error_msg_clone.set(Some(e)),
+                        let exact_find = search_exact_mod_unified(
+                            &provider,
+                            mod_name.to_string()
+                        ).await;
+
+                        match exact_find {
+                            Ok(mod_found) => {
+                                final_version_data.download_url = mod_found.version.download_url;
+                            },
+                            Err(e) => {
+                                error_msg_clone.set(Some("Failed to resolve download URL".to_string()));
+                                mod_store.write().set_processing(&mod_id, false);
+                                return;
+                            }
+                        }
+                    }
+
+                    let download_res = {
+                        let settings = settings_signal.read();
+                        download_version_unified(&settings, &final_version_data).await
+                    };
+
+                    match download_res {
+                        Ok((_, bytes)) => {
+                            let mut settings = settings_signal.write();
+                            match install_mod(
+                                &folder,
+                                &final_version_data.file_name,
+                                &bytes,
+                                mod_id.clone(),
+                                mod_name.clone(),
+                                file_id,
+                                version_name.clone(),
+                                provider,
+                                &mut settings
+                            ) {
+                                Ok(_) => {},
+                                Err(e) => {
+                                    error_msg_clone.set(Some(format!("Install error: {}", e)));
                                 }
                             }
-                            Err(e) => error_msg_clone.set(Some(e)),
                         }
-                    } else {
-                        error_msg_clone.set(Some("No download URL".to_string()));
+                        Err(e) => {
+                            error_msg_clone.set(Some(format!("Download failed: {}", e)));
+                        }
                     }
                 }
                 ButtonAction::Remove => {
@@ -365,13 +393,29 @@ pub fn ModInfoDialog(mod_data: UiMod, on_close: EventHandler<()>) -> Element {
                     }
                 }
 
-                div { style: "display: flex; gap: 15px; padding: 20px 30px; border-top: 1px solid var(--bg-tertiary); background-color: var(--bg-secondary);",
+                div {
+                    style: "display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-top: 1px solid var(--bg-tertiary); background-color: var(--bg-secondary);",
+
                     button {
                         class: "btn {button_info().class}",
-                        style: "z-index: 2; min_width: 80px;",
+                        style: "z-index: 2; min-width: 120px;",
                         disabled: button_info().disabled,
                         onclick: handle_action,
                         "{button_info().text}"
+                    }
+
+                    button {
+                        class: "btn btn-outline",
+                        style: "display: flex; align-items: center; gap: 8px;",
+                        onclick: move |_| {
+                            let url = mod_data().website_url.clone();
+                            spawn(async move {
+                                if let Err(e) = open::that(&url) {
+                                    error_msg.set(Some(format!("Could not open browser: {}", e)));
+                                }
+                            });
+                        },
+                        span { "View on Website ↗" }
                     }
                 }
             }
@@ -393,6 +437,16 @@ fn VersionRow(
         _ => ("?", "var(--text-secondary)"),
     };
 
+    let has_url = version.download_url.is_some();
+
+    let (btn_text, btn_class, btn_disabled) = if is_installed {
+        ("Installed", "btn btn-ghost", true)
+    } else if !has_url {
+        ("Not Available", "btn btn-secondary", true)
+    } else {
+        ("Install", "btn btn-brand", false)
+    };
+
     rsx! {
         div {
             style: "display: flex; align-items: center; background-color: var(--bg-tertiary); padding: 10px; border-radius: 6px; gap: 15px;",
@@ -409,11 +463,15 @@ fn VersionRow(
                 }
             }
             button {
-                class: if is_installed { "btn btn-ghost" } else { "btn btn-brand" },
+                class: "{btn_class}",
                 style: "padding: 5px 15px; font-size: 12px;",
-                disabled: is_installed || is_processing,
-                onclick: move |_| on_install.call(version.clone()),
-                if is_installed { "Installed" } else { "Install" }
+                disabled: btn_disabled || is_processing,
+                onclick: move |_| {
+                    if has_url {
+                        on_install.call(version.clone())
+                    }
+                },
+                "{btn_text}"
             }
         }
     }
