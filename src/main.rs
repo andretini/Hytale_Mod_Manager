@@ -30,16 +30,37 @@ pub enum SidebarTab {
     Installed,
 }
 
+
+
 fn main() {
     let window = WindowBuilder::new()
         .with_title("My App Name")
         .with_resizable(true);
 
+    let dir = std::env::temp_dir().join("com.hytale.modmanager.desktop.cache");
+
     let config = Config::new()
         .with_window(window)
         .with_menu(None)
+        .with_data_directory(&dir)
+        .with_custom_event_handler({
+            let dir = dir.clone();
+            move |event, _target| {
+                use dioxus::desktop::tao::event::{Event, WindowEvent};
+
+                if let Event::WindowEvent { event, .. } = event {
+                    if let WindowEvent::CloseRequested = event {
+                        println!("Cleaning cache...");
+                        match std::fs::remove_dir_all(&dir) {
+                            Ok(_) => println!("Cache removed"),
+                            Err(e) => println!("Failed to remove cache: {e}"),
+                        }
+                    }
+                }
+            }
+        })
         .with_disable_context_menu(false);
-    
+
     LaunchBuilder::desktop()
         .with_cfg(config)
         .launch(App);
