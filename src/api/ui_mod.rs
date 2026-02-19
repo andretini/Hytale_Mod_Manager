@@ -179,7 +179,6 @@ pub async fn search_mods_unified(
 ) -> Result<(Vec<UiMod>, u32), String> {
     match settings.api_provider {
         ApiProvider::CurseForge => {
-            dbg!(sort);
             let sort = match sort {
                 0 => 2,
                 1 => 1,
