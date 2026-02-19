@@ -80,7 +80,7 @@ pub fn SearchPage(on_open_info: EventHandler<UiMod>) -> Element {
 
                 div { style: "flex: 2; min-width: 0;",
                     ThemeDropdown {
-                        items: ["Featured".to_string(), "Popularity".to_string(), "LastUpdated".to_string()],
+                        items: ["Popularity".to_string(), "Featured".to_string(), "LastUpdated".to_string(), "Rating".to_string(), "Creation Date".to_string(), "Total Downloads".to_string()],
                         upwards: false,
                         placeholder: "Theme",
                         default_index: Some(0),

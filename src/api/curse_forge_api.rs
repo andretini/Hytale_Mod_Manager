@@ -195,7 +195,7 @@ pub async fn search_mods(query: String, search_sort: u32, offset: u32) -> Result
         ("searchFilter", search_filter.to_string()),
         ("category", "0".to_string()),
         ("pageSize", "20".to_string()),
-        ("sortField", (search_sort + 1).to_string()),
+        ("sortField", (search_sort).to_string()),
         ("sortOrder", "desc".to_string()),
         ("index", offset.to_string()),
     ];

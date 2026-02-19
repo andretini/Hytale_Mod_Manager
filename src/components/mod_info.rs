@@ -205,8 +205,8 @@ pub fn ModInfoDialog(mod_data: UiMod, on_close: EventHandler<()>) -> Element {
         selected_image.set(urls.first().cloned());
     });
 
-    let current_gallery_image =
-        selected_image().or_else(|| mod_data().gallery_urls.first().cloned());
+    let current_gallery_image = selected_image().or_else(|| mod_data().gallery_urls.first().cloned());
+    let overview_display_date = mod_data().version.upload_date.split('T').next().unwrap_or(&mod_data().version.upload_date).to_string();
 
     rsx! {
         div {
@@ -214,208 +214,225 @@ pub fn ModInfoDialog(mod_data: UiMod, on_close: EventHandler<()>) -> Element {
             onclick: move |_| on_close.call(()),
 
             div {
-                style: "background-color: var(--bg-secondary); width: 80%; height: 80%; max-width: 1400px; display: flex; flex-direction: column; padding: 10px; border-radius: 12px; border: 1px solid var(--text-secondary); box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: var(--text-primary); gap: 10px; padding: 0 30px; padding-top: 30px;",
+                style: "background-color: var(--bg-secondary); width: 85%; height: 85%; max-width: 1400px; display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--text-secondary); box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: var(--text-primary); overflow: hidden;",
                 onclick: |e| e.stop_propagation(),
 
-                div { style: "display: flex; gap: 20px; align-items: flex-start; background-color: var(--bg-secondary); padding: 0;",
+                div { style: "display: flex; gap: 20px; align-items: center; background-color: var(--bg-tertiary); padding: 20px 30px;",
                     if !mod_data().icon.is_empty() {
-                        img { src: "{mod_data().icon}", style: "width: 80px; height: 80px; border-radius: 10px; object-fit: cover; background-color: var(--bg-tertiary);" }
+                        img { src: "{mod_data().icon}", style: "width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 1px solid var(--bg-quaternary);" }
                     }
                     div { style: "flex: 1;",
-                        div { style: "display: flex; flex-direction: row; gap: 10px; align-items: center;",
-                            h2 { style: "margin: 0;", "{mod_data().name}" },
-                            {
-                                let info = install_info();
-                                let version_display = info.local_version.clone().unwrap_or_default();
-                                rsx! {
-                                    span {
-                                        style: "font-size: 14px; background: var(--bg-quaternary); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; text-align: center; display: flex; align-items: center; justify-content: center; height: fit-content;",
-                                        "{version_display}"
-                                    }
-                                }
-                            }
-                        },
-                        div { style: "font-size: 14px; margin-top: 5px;", "By {mod_data().authors}" }
-                    }
-                    button { class: "btn btn-ghost", onclick: move |_| on_close.call(()), "X" }
-                }
-
-                {
-                    if let InstallStatus::Outdated = install_info().install_status {
-                        rsx! {
-                            div {
-                                style: "background: rgba(255, 165, 0, 0.2); color: var(--text-primary); padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; text-align: center;",
-                                span {"⚠ A newer version is available. Update to the latest version!"},
+                        div { style: "display: flex; flex-direction: row; gap: 12px; align-items: center;",
+                            h2 { style: "margin: 0; font-size: 24px;", "{mod_data().name}" },
+                            span {
+                                style: "font-size: 12px; background: var(--brand-primary); color: white; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; font-weight: bold;",
+                                "{app_settings.read().api_provider:?}"
                             }
                         }
+                        div { style: "font-size: 14px; color: var(--text-secondary); margin-top: 4px;", "By {mod_data().authors}" }
                     }
-                    else {
-                        rsx! {}
+                    button { class: "btn btn-ghost", style: "font-size: 20px;", onclick: move |_| on_close.call(()), "✕" }
+                }
+
+                if let InstallStatus::Outdated = install_info().install_status {
+                    div {
+                        style: "background: linear-gradient(90deg, rgba(255,165,0,0.1) 0%, rgba(255,165,0,0.2) 50%, rgba(255,165,0,0.1) 100%); color: #ffb86c; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,165,0,0.2);",
+                        "⚠ UPDATE AVAILABLE: Current local version is {install_info().local_version.unwrap_or_default()}"
                     }
                 }
 
-                div { style: "padding: 0 30px; display: flex; gap: 10px; border-bottom: 1px solid var(--bg-tertiary);",
-                    button {
-                        class: if active_tab() == "overview" { "btn btn-tab-active" } else { "btn btn-tab" },
-                        onclick: move |_| active_tab.set("overview"),
-                        "Overview"
-                    }
-                    button {
-                        class: if active_tab() == "versions" { "btn btn-tab-active" } else { "btn btn-tab" },
-                        onclick: move |_| active_tab.set("versions"),
-                        "Versions ({displayed_versions.read().len()})"
-                    }
-                }
+                div { style: "display: flex; flex: 1; overflow: hidden;",
 
-                div { style: "flex: 1; overflow-y: auto; padding: 30px;",
-                    if let Some(err) = error_msg() {
-                        div { style: "color: var(--danger); margin-bottom: 20px;", "Error: {err}" }
-                    }
+                    div { style: "flex: 1; display: flex; flex-direction: column; overflow-y: auto;",
 
-                    if active_tab() == "overview" {
-                        div {
-                            style: "display: flex; flex-direction: column; gap: 20px;",
-                            if !mod_data().banner.is_empty() {
-                                div {
-                                    style: "width: 100%; height: 200px; background-color: var(--bg-tertiary); border-radius: 8px; overflow: hidden; border: 1px solid var(--bg-secondary);",
-                                    img {
-                                        src: "{mod_data().banner}",
-                                        style: "width: 100%; height: 100%; object-fit: cover;"
-                                    }
-                                }
+                        div { style: "padding: 10px 30px; display: flex; gap: 20px; border-bottom: 1px solid var(--bg-tertiary); background: var(--bg-secondary); position: sticky; top: 0; z-index: 5;",
+                            button {
+                                class: if active_tab() == "overview" { "btn btn-tab-active" } else { "btn btn-tab" },
+                                onclick: move |_| active_tab.set("overview"),
+                                "Overview"
                             }
-                            div {
-                                style: "margin: 0 10px; line-height: 1.6; color: var(--text-secondary); font-size: 14px;",
-                                "{mod_data().summary}"
+                            button {
+                                class: if active_tab() == "versions" { "btn btn-tab-active" } else { "btn btn-tab" },
+                                onclick: move |_| active_tab.set("versions"),
+                                "Versions ({displayed_versions.read().len()})"
                             }
-                            if !mod_data().gallery_urls.is_empty() {
-                                div {
-                                    style: "display: flex; flex-direction: column; gap: 10px; margin: 10px auto; width: 100%; max-width: 800px;",
-                                    div {
-                                        style: "width: 100%; aspect-ratio: 16/9; max-height: 40vh; border-radius: 8px; border: 1px solid var(--bg-secondary); display: flex; align-items: center; justify-content: center; overflow: hidden;",
-                                        if let Some(img_src) = current_gallery_image {
-                                            img { src: "{img_src}", style: "width: 100%; height: 100%; object-fit: contain;" }
+                        }
+
+                        div { style: "padding: 30px;",
+                            if let Some(err) = error_msg() {
+                                div { style: "background: rgba(255,0,0,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 12px; border-radius: 6px; margin-bottom: 20px;", "Error: {err}" }
+                            }
+
+                            if active_tab() == "overview" {
+                                div { style: "display: flex; flex-direction: column; gap: 25px;",
+                                    if !mod_data().banner.is_empty() {
+                                        img {
+                                            src: "{mod_data().banner}",
+                                            style: "width: 100%; height: 240px; object-fit: cover; border-radius: 8px; background: var(--bg-tertiary);"
                                         }
                                     }
+
+                                    div { style: "display: flex; flex-wrap: wrap; gap: 20px; background: var(--bg-tertiary); padding: 15px; border-radius: 8px;",
+                                        div { style: "display: flex; flex-direction: column; min-width: 120px;",
+                                            span { style: "font-size: 11px; color: var(--text-secondary); text-transform: uppercase;", "Downloads" }
+                                            span { style: "font-size: 16px; font-weight: bold;", "{mod_data().download_count.to_string()}" }
+                                        }
+                                        div { style: "display: flex; flex-direction: column; min-width: 120px;",
+                                            span { style: "font-size: 11px; color: var(--text-secondary); text-transform: uppercase;", "Latest Version" }
+                                            span { style: "font-size: 16px; font-weight: bold;", "{mod_data().version.display_name}" }
+                                        }
+                                        div { style: "display: flex; flex-direction: column; min-width: 120px;",
+                                            span { style: "font-size: 11px; color: var(--text-secondary); text-transform: uppercase;", "Updated" }
+                                            span { style: "font-size: 16px; font-weight: bold;", "{overview_display_date}" }
+                                        }
+                                    }
+
                                     div {
-                                        style: "display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px; scrollbar-width: thin; justify-content: center;",
-                                        for image in mod_data().gallery_urls.iter() {
-                                            {
-                                                let image_owned = image.clone();
-                                                let is_selected = Some(image_owned.clone()) == selected_image() || (selected_image().is_none() && Some(image_owned.clone()) == mod_data().gallery_urls.first().cloned());
-                                                let border_color = if is_selected { "var(--brand-primary)" } else { "transparent" };
-                                                let opacity_val = if is_selected { "1.0" } else { "0.6" };
-                                                rsx! {
-                                                    img {
-                                                        src: "{image_owned}",
-                                                        onclick: move |_| selected_image.set(Some(image_owned.clone())),
-                                                        style: "cursor: pointer; width: 80px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0; transition: all 0.2s; border: 2px solid {border_color}; opacity: {opacity_val};"
-                                                    }
+                                        style: "line-height: 1.8; color: var(--text-primary); font-size: 15px; white-space: pre-wrap;",
+                                        "{mod_data().summary}"
+                                    }
+
+                                    if !mod_data().gallery_urls.is_empty() {
+                                        div { style: "display: flex; flex-direction: column; gap: 15px;",
+                                            div { style: "width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--bg-quaternary); display: flex; align-items: center; justify-content: center;",
+                                                if let Some(img_src) = current_gallery_image {
+                                                    img { src: "{img_src}", style: "width: 100%; height: 100%; object-fit: contain;" }
                                                 }
                                             }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else if active_tab() == "versions" {
-                        div { style: "display: flex; flex-direction: column; gap: 10px;",
-                            for version in displayed_versions.read().iter() {{
-                                let mod_name_owned = mod_name_for_versions.clone();
-                                let mod_id_owned = mod_id_for_versions.clone();
-                                let version_data = version.clone();
+                                            div { style: "display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; justify-content: center;",
+                                                for image in mod_data().gallery_urls.iter() {
+                                                    {
+                                                        let image_owned = image.clone();
+                                                        let is_selected = Some(image_owned.clone()) == selected_image();
+                                                        let border_color = if is_selected { "var(--brand-primary)" } else { "transparent" };
+                                                        let opacity_val = if is_selected { "1.0" } else { "0.6" };
 
-                                rsx!{
-                                    VersionRow {
-                                        version: version.clone(),
-                                        is_installed: {
-                                            let current_settings = app_settings.read();
-                                            if let Some(entry) = current_settings.installed_mods.values().find(|e| e.mod_id == mod_id_owned) {
-                                                entry.file_id == version.file_id
-                                            } else {
-                                                false
-                                            }
-                                        },
-                                        is_processing: is_processing,
-                                        on_install: move |_| {
-                                            let mod_id = mod_id_owned.clone();
-                                            let mod_name = mod_name_owned.clone();
-                                            let folder = match app_settings.read().get_game_folder() {
-                                                Some(p) => p,
-                                                None => { error_msg.set(Some("No Game Folder Set".to_string())); return; }
-                                            };
-
-                                            let file_id = version_data.file_id.clone();
-                                            let file_name = version_data.file_name.clone();
-                                            let version_name = version_data.display_name.clone();
-                                            let provider = app_settings.read().api_provider.clone();
-
-                                            let mut error_msg_clone = error_msg.clone();
-                                            let mut settings_signal = app_settings.clone();
-                                            let version_clone_for_dl = version_data.clone();
-
-                                            (mod_store.write()).set_processing(&mod_id, true);
-                                            error_msg.set(None);
-
-                                            spawn(async move {
-                                                let download_res = {
-                                                    let settings = settings_signal.read();
-                                                    download_version_unified(&settings, &version_clone_for_dl).await
-                                                };
-
-                                                match download_res {
-                                                    Ok((_, bytes)) => {
-                                                        let mut settings = settings_signal.write();
-                                                        match install_mod(
-                                                            &folder,
-                                                            &file_name,
-                                                            &bytes,
-                                                            mod_id.clone(),
-                                                            mod_name,
-                                                            file_id,
-                                                            version_name,
-                                                            provider,
-                                                            &mut settings
-                                                        ) {
-                                                            Ok(_) => {},
-                                                            Err(e) => error_msg_clone.set(Some(e)),
+                                                        rsx! {
+                                                            img {
+                                                                src: "{image_owned}",
+                                                                onclick: move |_| selected_image.set(Some(image_owned.clone())),
+                                                                style: "cursor: pointer; width: 100px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid {border_color}; opacity: {opacity_val}; transition: all 0.2s;"
+                                                            }
                                                         }
                                                     }
-                                                    Err(e) => error_msg_clone.set(Some(e)),
                                                 }
-                                                (mod_store.write()).set_processing(&mod_id, false);
-                                            });
+                                            }
                                         }
                                     }
                                 }
-                            }}
+                            } else if active_tab() == "versions" {
+                                div { style: "display: flex; flex-direction: column; gap: 8px;",
+                                    for version in displayed_versions.read().iter() {{
+                                        let mod_name_owned = mod_name_for_versions.clone();
+                                        let mod_id_owned = mod_id_for_versions.clone();
+                                        let version_data = version.clone();
+
+                                        rsx!{
+                                            VersionRow {
+                                                version: version.clone(),
+                                                is_installed: {
+                                                    let current_settings = app_settings.read();
+                                                    if let Some(entry) = current_settings.installed_mods.values().find(|e| e.mod_id == mod_id_owned) {
+                                                        entry.file_id == version.file_id
+                                                    } else {
+                                                        false
+                                                    }
+                                                },
+                                                is_processing: is_processing,
+                                                on_install: move |_| {
+                                                    let mod_id = mod_id_owned.clone();
+                                                    let mod_name = mod_name_owned.clone();
+                                                    let folder = match app_settings.read().get_game_folder() {
+                                                        Some(p) => p,
+                                                        None => { error_msg.set(Some("No Game Folder Set".to_string())); return; }
+                                                    };
+
+                                                    let file_id = version_data.file_id.clone();
+                                                    let file_name = version_data.file_name.clone();
+                                                    let version_name = version_data.display_name.clone();
+                                                    let provider = app_settings.read().api_provider.clone();
+
+                                                    let mut error_msg_clone = error_msg.clone();
+                                                    let mut settings_signal = app_settings.clone();
+                                                    let version_clone_for_dl = version_data.clone();
+
+                                                    (mod_store.write()).set_processing(&mod_id, true);
+                                                    error_msg.set(None);
+
+                                                    spawn(async move {
+                                                        let download_res = {
+                                                            let settings = settings_signal.read();
+                                                            download_version_unified(&settings, &version_clone_for_dl).await
+                                                        };
+
+                                                        match download_res {
+                                                            Ok((_, bytes)) => {
+                                                                let mut settings = settings_signal.write();
+                                                                match install_mod(
+                                                                    &folder,
+                                                                    &file_name,
+                                                                    &bytes,
+                                                                    mod_id.clone(),
+                                                                    mod_name,
+                                                                    file_id,
+                                                                    version_name,
+                                                                    provider,
+                                                                    &mut settings
+                                                                ) {
+                                                                    Ok(_) => {},
+                                                                    Err(e) => error_msg_clone.set(Some(e)),
+                                                                }
+                                                            }
+                                                            Err(e) => error_msg_clone.set(Some(e)),
+                                                        }
+                                                        (mod_store.write()).set_processing(&mod_id, false);
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    }}
+                                }
+                            }
                         }
                     }
-                }
 
-                div {
-                    style: "display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-top: 1px solid var(--bg-tertiary); background-color: var(--bg-secondary);",
-
-                    button {
-                        class: "btn {button_info().class}",
-                        style: "z-index: 2; min-width: 120px;",
-                        disabled: button_info().disabled,
-                        onclick: handle_action,
-                        "{button_info().text}"
-                    }
-
-                    button {
-                        class: "btn btn-outline",
-                        style: "display: flex; align-items: center; gap: 8px;",
-                        onclick: move |_| {
-                            let url = mod_data().website_url.clone();
-                            spawn(async move {
-                                if let Err(e) = open::that(&url) {
-                                    error_msg.set(Some(format!("Could not open browser: {}", e)));
+                    div { style: "width: 280px; background: var(--bg-tertiary); border-left: 1px solid var(--bg-quaternary); padding: 30px; display: flex; flex-direction: column; gap: 20px;",
+                        div {
+                            span { style: "display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;", "CATEGORIES" }
+                            div { style: "display: flex; flex-wrap: wrap; gap: 6px;",
+                                for cat in mod_data().categories.iter() {
+                                    span { style: "background: var(--bg-quaternary); padding: 4px 8px; border-radius: 4px; font-size: 11px;", "{cat}" }
                                 }
-                            });
-                        },
-                        span { "View on Website ↗" }
+                            }
+                        }
+                        div {
+                            span { style: "display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;", "PROJECT ID" }
+                            span { style: "font-family: monospace; font-size: 12px;", "{mod_data().id}" }
+                        }
+
+                        div { style: "margin-top: auto; display: flex; flex-direction: column; gap: 10px;",
+                            button {
+                                class: "btn {button_info().class}",
+                                style: "width: 100%; padding: 12px; font-weight: bold;",
+                                disabled: button_info().disabled,
+                                onclick: handle_action,
+                                "{button_info().text}"
+                            }
+
+                            button {
+                                class: "btn btn-outline",
+                                style: "width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;",
+                                onclick: move |_| {
+                                    let url = mod_data().website_url.clone();
+                                    spawn(async move {
+                                        if let Err(e) = open::that(&url) {
+                                            error_msg.set(Some(format!("Could not open browser: {}", e)));
+                                        }
+                                    });
+                                },
+                                span { "View Website ↗" }
+                            }
+                        }
                     }
                 }
             }
@@ -447,6 +464,8 @@ fn VersionRow(
         ("Install", "btn btn-brand", false)
     };
 
+    let display_date = version.upload_date.split('T').next().unwrap_or(&version.upload_date);
+
     rsx! {
         div {
             style: "display: flex; align-items: center; background-color: var(--bg-tertiary); padding: 10px; border-radius: 6px; gap: 15px;",
@@ -457,7 +476,7 @@ fn VersionRow(
             div { style: "flex: 1; display: flex; flex-direction: column;",
                 span { style: "color: var(--text-primary); font-weight: bold;", "{version.display_name}" }
                 div { style: "font-size: 12px; color: var(--text-secondary); display: flex; gap: 10px;",
-                    span { "{version.upload_date}" }
+                    span { "{display_date}" }
                     span { "•" }
                     span { "{version.game_versions.join(\", \")}" }
                 }
