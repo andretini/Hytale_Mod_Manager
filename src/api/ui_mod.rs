@@ -98,7 +98,7 @@ impl UiMod {
             .unwrap_or_else(|| icon.clone());
 
         let gallery_urls = api_mod.screenshots.iter()
-            .map(|s| s.thumbnail_url.clone())
+            .map(|s| s.url.clone())
             .collect();
 
         let version = if let Some(latest) = api_mod
