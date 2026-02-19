@@ -98,9 +98,7 @@ impl UiMod {
             .unwrap_or_else(|| icon.clone());
 
         let gallery_urls = api_mod.screenshots.iter()
-            .skip(1)
             .map(|s| s.thumbnail_url.clone())
-            .take(3)
             .collect();
 
         let version = if let Some(latest) = api_mod
@@ -181,6 +179,16 @@ pub async fn search_mods_unified(
 ) -> Result<(Vec<UiMod>, u32), String> {
     match settings.api_provider {
         ApiProvider::CurseForge => {
+            let sort = match sort {
+                0 => 2,
+                1 => 1,
+                2 => 3,
+                3 => 12,
+                4 => 11,
+                5 => 6,
+                _ => 1,
+            };
+
             match curse_forge_api::search_mods(query, sort, offset).await {
                 Ok((api_mods, pagination)) => {
                     let ui_mods: Vec<UiMod> = api_mods.iter()

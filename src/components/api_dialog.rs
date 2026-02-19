@@ -28,6 +28,7 @@ pub fn ApiDialog(on_close: EventHandler<()>) -> Element {
                 onclick: |e| e.stop_propagation(),
 
                 h3 { style: "margin: 0; color: var(--text-primary);", "Configure API" }
+                p { style: "margin: 0; font-size: 10px; color: var(--text-secondary);", "The API key may take a few Hours to start working after generating it on the website" }
 
                 div { style: "display: flex; flex-direction: column; gap: 5px;",
                     label { style: "font-size: 12px; color: var(--text-secondary);", "Provider" }
